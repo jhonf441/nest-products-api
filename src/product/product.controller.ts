@@ -94,7 +94,7 @@ export class ProductController {
     const owner = req.user._id;
     const product = await this.productService.findOne(productID);
     if (!product) throw new NotFoundException('Product does not exists');
-    console.log(product.owner._id.toString(), owner.toString());
+  
     if (product.owner._id.toString() !== owner.toString())
       throw new HttpException(
         'You cannot modify products that are not yours.',
