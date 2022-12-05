@@ -8,21 +8,21 @@ import {
   NotFoundException,
   Patch,
   UseGuards,
-  Request,
+  Req,
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductService } from './product.service';
-import { Product } from './interfaces/product.interface';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { ParseObjectIdPipe } from 'src/utilities/parse-object-id-pipe.pipe';
-import { JwtGuard } from 'src/auth/guards/jwt.guard';
+import { ParseObjectIdPipe } from '../utilities/parse-object-id-pipe.pipe';
+import { JwtGuard } from '../auth/guards/jwt.guard';
+import RequestWithUser from './interfaces/requestWithUser.interface';
 
 @ApiBearerAuth()
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard)  
 @Controller('product')
 @ApiTags('product')
 export class ProductController {
@@ -31,11 +31,14 @@ export class ProductController {
   @ApiBearerAuth()
   @UseGuards(JwtGuard)
   @Post()
-  async create(@Request() req, @Body() createProductDto: CreateProductDto) {
-    const product = await this.productService.create({
-      ...createProductDto,
-      owner: req.user._id,
-    });
+  async create(
+    @Req() req: RequestWithUser,
+    @Body() createProductDto: CreateProductDto,
+  ) {
+    const product = await this.productService.create(
+      createProductDto,
+      req.user,
+    );
     return {
       message: 'Product successfully created',
       product,
@@ -43,7 +46,7 @@ export class ProductController {
   }
 
   @Get()
-  async findAll(): Promise<Product[]> {
+  async findAll() {
     return await this.productService.findAll();
   }
 
@@ -57,7 +60,7 @@ export class ProductController {
 
   @Patch(':productID')
   async update(
-    @Request() req,
+    @Req() req,
     @Body() updateProductDTO: UpdateProductDto,
     @Param('productID', ParseObjectIdPipe) productID: string,
   ) {
@@ -67,7 +70,7 @@ export class ProductController {
 
     if (!product) throw new NotFoundException('Product does not exists');
 
-    if (product.owner.toString() !== owner.toString())
+    if (product.owner._id.toString() !== owner.toString())
       throw new HttpException(
         'You cannot modify products that are not yours.',
         HttpStatus.FORBIDDEN,
@@ -85,14 +88,14 @@ export class ProductController {
 
   @Delete(':productID')
   async remove(
-    @Request() req,
+    @Req() req,
     @Param('productID', ParseObjectIdPipe) productID: string,
   ) {
     const owner = req.user._id;
     const product = await this.productService.findOne(productID);
     if (!product) throw new NotFoundException('Product does not exists');
-
-    if (product.owner.toString() !== owner.toString())
+    console.log(product.owner._id.toString(), owner.toString());
+    if (product.owner._id.toString() !== owner.toString())
       throw new HttpException(
         'You cannot modify products that are not yours.',
         HttpStatus.FORBIDDEN,

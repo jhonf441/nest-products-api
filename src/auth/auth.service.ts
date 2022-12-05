@@ -1,5 +1,5 @@
 import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
-import { UserService } from 'src/user/user.service';
+import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -12,15 +12,15 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 export class AuthService {
   constructor(
     private jwtService: JwtService,
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    private readonly userService: UserService,
   ) {}
 
   public async login(userLoginBody: LoginAuthDto) {
     const { password, email } = userLoginBody;
 
-    const userExist = await this.userModel.findOne({
-      email: email,
-    });
+    const userExist = await this.userService.getByEmail(
+     email,
+    );
     if (!userExist) throw new HttpException('NOT_FOUND', HttpStatus.NOT_FOUND);
 
     const isCheck = await compareHash(password, userExist.password);
@@ -48,7 +48,7 @@ export class AuthService {
   public async register(userBody: RegisterAuthDto) {
     const { password, name, email } = userBody;
 
-    const existingUser = await this.userModel.findOne({ email });
+    const existingUser = await this.userService.getByEmail(email);
 
     if (existingUser)
       throw new HttpException(
@@ -62,6 +62,6 @@ export class AuthService {
       password: await generateHash(password),
     };
 
-    return await this.userModel.create(userParse);
+    return await this.userService.create(userParse);
   }
 }
