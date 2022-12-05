@@ -24,7 +24,7 @@ export class AuthService {
     if (!userExist) throw new HttpException('NOT_FOUND', HttpStatus.NOT_FOUND);
 
     const isCheck = await compareHash(password, userExist.password);
-    console.log('isCheck', isCheck);
+
     if (!isCheck)
       throw new HttpException('PASSWORD_INVALID', HttpStatus.CONFLICT);
 

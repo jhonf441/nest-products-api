@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product } from './interfaces/product.interface';
@@ -12,14 +12,14 @@ export class ProductService {
   async findAll(): Promise<Product[]> {
     return this.productModel
       .find()
-      .populate({ path: 'user', select: ['email', 'name'] })
+      .populate({ path: 'owner', select: ['email', 'name'] })
       .exec();
   }
 
   async findOne(productID: string): Promise<Product> {
     const product = await this.productModel
       .findById(productID)
-      .populate({ path: 'user', select: ['email', 'name'] });
+      .populate({ path: 'owner', select: ['email', 'name'] });
 
     return product;
   }
@@ -27,38 +27,23 @@ export class ProductService {
   async create(createProductDTO: CreateProductDto): Promise<Product> {
     return await (
       await this.productModel.create(createProductDTO)
-    ).populate({ path: 'user', select: ['email', 'name'] });
+    ).populate({ path: 'owner', select: ['email', 'name'] });
   }
 
-  async remove(productID: string, user: Types.ObjectId): Promise<Product> {
-    const product = await this.productModel.findById(productID);
-    if (product.user.toString() !== user.toString())
-      throw new HttpException(
-        'You do not have permission to edit',
-        HttpStatus.FORBIDDEN,
-      );
+  async remove(productID: string): Promise<Product> {
     const deleteProduct = await this.productModel
       .findByIdAndDelete(productID)
-      .populate({ path: 'user', select: ['email', 'name'] });
+      .populate({ path: 'owner', select: ['email', 'name'] });
     return deleteProduct;
   }
 
   async update(
     productID: string,
     updateProductDto: UpdateProductDto,
-    user: Types.ObjectId,
   ): Promise<Product> {
-    const product = await this.productModel.findById(productID);
-    console.log(product.user, user);
-    if (product.user.toString() !== user.toString())
-      throw new HttpException(
-        'You do not have permission to edit',
-        HttpStatus.FORBIDDEN,
-      );
-
     const updateProduct = await this.productModel
       .findByIdAndUpdate(productID, updateProductDto, { new: true })
-      .populate({ path: 'user', select: ['email', 'name'] });
+      .populate({ path: 'owner', select: ['email', 'name'] });
     return updateProduct;
   }
 }

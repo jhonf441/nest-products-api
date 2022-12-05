@@ -9,7 +9,8 @@ import {
   Patch,
   UseGuards,
   Request,
-  Query,
+  HttpStatus,
+  HttpException,
 } from '@nestjs/common';
 
 import { CreateProductDto } from './dto/create-product.dto';
@@ -19,7 +20,6 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ParseObjectIdPipe } from 'src/utilities/parse-object-id-pipe.pipe';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
-import { Types } from 'mongoose';
 
 @ApiBearerAuth()
 @UseGuards(JwtGuard)
@@ -34,7 +34,7 @@ export class ProductController {
   async create(@Request() req, @Body() createProductDto: CreateProductDto) {
     const product = await this.productService.create({
       ...createProductDto,
-      user: req.user._id,
+      owner: req.user._id,
     });
     return {
       message: 'Product successfully created',
@@ -61,12 +61,21 @@ export class ProductController {
     @Body() updateProductDTO: UpdateProductDto,
     @Param('productID', ParseObjectIdPipe) productID: string,
   ) {
+    const owner = req.user._id;
+
+    const product = await this.productService.findOne(productID);
+
+    if (!product) throw new NotFoundException('Product does not exists');
+
+    if (product.owner.toString() !== owner.toString())
+      throw new HttpException(
+        'You cannot modify products that are not yours.',
+        HttpStatus.FORBIDDEN,
+      );
     const updatedProduct = await this.productService.update(
       productID,
       updateProductDTO,
-      req.user._id,
     );
-    if (!updatedProduct) throw new NotFoundException('Product does not exists');
 
     return {
       message: 'Product updated successfully',
@@ -79,12 +88,17 @@ export class ProductController {
     @Request() req,
     @Param('productID', ParseObjectIdPipe) productID: string,
   ) {
-    const deleteProduct = await this.productService.remove(
-      productID,
-      req.user._id,
-    );
+    const owner = req.user._id;
+    const product = await this.productService.findOne(productID);
+    if (!product) throw new NotFoundException('Product does not exists');
 
-    if (!deleteProduct) throw new NotFoundException('Product does not exists');
+    if (product.owner.toString() !== owner.toString())
+      throw new HttpException(
+        'You cannot modify products that are not yours.',
+        HttpStatus.FORBIDDEN,
+      );
+    const deleteProduct = await this.productService.remove(productID);
+
     return { message: 'Product deleted successfully', deleteProduct };
   }
 }

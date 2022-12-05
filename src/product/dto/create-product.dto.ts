@@ -12,7 +12,7 @@ export class CreateProductDto {
   readonly price: number;
 
   @ApiHideProperty()
-  readonly user: Types.ObjectId;
+  readonly owner: Types.ObjectId;
 
   /* @ApiProperty()
   readonly createdAt: Date; */

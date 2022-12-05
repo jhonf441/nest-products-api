@@ -7,7 +7,7 @@ export class JwtHandle {
 
   public getIdByToken(token: string) {
     const response = this.jwtService.verify(token);
-    console.log(response);
+
     return response;
   }
 }

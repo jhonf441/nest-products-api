@@ -3,5 +3,5 @@ import { Types } from 'mongoose';
 export interface Product {
   readonly name: string;
   readonly price: number;
-  readonly user: Types.ObjectId;
+  readonly owner: Types.ObjectId;
 }
